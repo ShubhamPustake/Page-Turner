@@ -1,9 +1,9 @@
-import { auth } from "../../../../auth";
+import { auth } from "../../../auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut, Package, CreditCard, Settings, User as UserIcon } from "lucide-react";
-import { signOut } from "../../../../auth";
+import { signOut } from "../../../auth";
 
 export default async function DashboardPage() {
   const session = await auth();
