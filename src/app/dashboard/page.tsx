@@ -2,15 +2,33 @@ import { auth } from "../../../auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Package, CreditCard, Settings, User as UserIcon } from "lucide-react";
+import { LogOut, Package, CreditCard, Settings, User as UserIcon, Clock } from "lucide-react";
 import { signOut } from "../../../auth";
+import db from "@/lib/db";
+import Image from "next/image";
 
 export default async function DashboardPage() {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
+
+  const orders = await db.order.findMany({
+    where: {
+      userId: session.user.id,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      items: {
+        include: {
+          book: true,
+        },
+      },
+    },
+  });
 
   return (
     <div className="container py-10 px-4 md:px-6 max-w-5xl">
@@ -71,11 +89,59 @@ export default async function DashboardPage() {
               <CardDescription>View and track your recent purchases</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground border border-dashed rounded-lg">
-                <Package className="h-10 w-10 opacity-20 mb-3" />
-                <p>You haven't placed any orders yet.</p>
-                <Button variant="link" className="mt-2 text-primary">Browse Books</Button>
-              </div>
+              {orders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground border border-dashed rounded-lg">
+                  <Package className="h-10 w-10 opacity-20 mb-3" />
+                  <p>You haven't placed any orders yet.</p>
+                  <Button variant="link" className="mt-2 text-primary">Browse Books</Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {orders.map((order) => (
+                    <div key={order.id} className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 p-4 border-b flex flex-wrap justify-between items-center gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Order Placed</p>
+                          <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Total</p>
+                          <p className="font-medium">${order.totalAmount.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Status</p>
+                          <p className="font-medium capitalize flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {order.status.toLowerCase()}
+                          </p>
+                        </div>
+                        <div className="flex-1 text-right">
+                          <p className="text-muted-foreground">Order # {order.id.slice(-8).toUpperCase()}</p>
+                          <Button variant="link" className="h-auto p-0 text-primary">View Details</Button>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-background">
+                        <div className="space-y-4">
+                          {order.items.map((item) => (
+                            <div key={item.id} className="flex gap-4">
+                              <div className="relative h-20 w-14 rounded overflow-hidden bg-muted flex-shrink-0">
+                                {item.book.coverImage && (
+                                  <Image src={item.book.coverImage} alt={item.book.title} fill className="object-cover" />
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-sm line-clamp-1">{item.book.title}</h4>
+                                <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                <p className="text-sm font-medium mt-1">${item.priceAtPurchase.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

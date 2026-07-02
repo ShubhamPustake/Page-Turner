@@ -13,11 +13,46 @@ import { useEffect, useState } from "react";
 
 export default function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const cart = useCart();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const onCheckout = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: cart.items,
+          shippingAddress: {
+            line1: "123 Book St",
+            city: "New York",
+            postalCode: "10001",
+            country: "US"
+          },
+          email: "guest@example.com",
+        }),
+      });
+      
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Something went wrong");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!isMounted) return null;
 
@@ -26,8 +61,8 @@ export default function CheckoutPage() {
       <div className="container py-20 px-4 text-center flex flex-col items-center max-w-lg mx-auto">
         <h1 className="text-3xl font-bold tracking-tight mb-4">Checkout</h1>
         <p className="text-muted-foreground mb-8">Your cart is empty. Add some books before proceeding to checkout.</p>
-        <Button asChild size="lg">
-          <Link href="/books">Return to Shop</Link>
+        <Button render={<Link href="/books" />} size="lg">
+          Return to Shop
         </Button>
       </div>
     );
@@ -165,13 +200,11 @@ export default function CheckoutPage() {
               <Button 
                 size="lg" 
                 className="w-full text-lg h-14"
-                onClick={() => {
-                  alert("Order placed successfully! (Demo MVP)");
-                  cart.clearCart();
-                }}
+                onClick={onCheckout}
+                disabled={isLoading}
               >
                 <Lock className="h-4 w-4 mr-2" />
-                Place Order
+                {isLoading ? "Processing..." : "Place Order"}
               </Button>
             </CardFooter>
           </Card>

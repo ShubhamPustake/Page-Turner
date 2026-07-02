@@ -34,8 +34,8 @@ export default async function WishlistPage() {
             <p className="mb-6 max-w-md mx-auto">
               You haven't added any books to your wishlist yet. Browse our catalog and click the heart icon on books you'd like to save.
             </p>
-            <Button asChild size="lg">
-              <Link href="/books">Explore Catalog</Link>
+            <Button render={<Link href="/books" />} size="lg">
+              Explore Catalog
             </Button>
           </div>
         </CardContent>
