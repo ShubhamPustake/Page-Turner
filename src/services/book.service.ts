@@ -82,3 +82,16 @@ export const getBookBySlug = async (slug: string) => {
 export const getCategories = async () => {
   return db.category.findMany();
 };
+
+export const getCategoryBySlug = async (slug: string) => {
+  return db.category.findUnique({
+    where: { slug },
+    include: {
+      books: {
+        include: {
+          authors: true,
+        },
+      },
+    },
+  });
+};
