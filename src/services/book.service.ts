@@ -11,6 +11,28 @@ export const getFeaturedBooks = async (limit = 4) => {
   });
 };
 
+export const getBestSellers = async (limit = 4) => {
+  return db.book.findMany({
+    where: { isBestSeller: true },
+    take: limit,
+    include: {
+      authors: true,
+      categories: true,
+    },
+  });
+};
+
+export const getNewArrivals = async (limit = 4) => {
+  return db.book.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: {
+      authors: true,
+      categories: true,
+    },
+  });
+};
+
 export const getBooks = async (params?: {
   categoryId?: string;
   search?: string;

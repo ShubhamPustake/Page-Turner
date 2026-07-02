@@ -1,65 +1,141 @@
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { BookCard } from "@/components/books/book-card";
+import { getBestSellers, getNewArrivals, getCategories } from "@/services/book.service";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, BookOpen } from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  const [bestsellers, newArrivals, categories] = await Promise.all([
+    getBestSellers(4),
+    getNewArrivals(4),
+    getCategories(),
+  ]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section */}
+      <section className="relative w-full py-20 md:py-32 lg:py-40 bg-muted/30 overflow-hidden">
+        <div className="container px-4 md:px-6 relative z-10 flex flex-col items-center text-center">
+          <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 transition-colors" variant="secondary">
+            Welcome to Page Turner
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 max-w-4xl">
+            Turn Every Page into a <span className="text-primary">New Adventure</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl leading-relaxed">
+            Discover your next favorite book. From gripping thrillers to heartwarming romances, our curated collection has a story waiting just for you.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <Button size="lg" className="h-12 px-8 text-base" render={<Link href="/books" />}>
+              Browse Books
+            </Button>
+            <Button size="lg" variant="outline" className="h-12 px-8 text-base bg-background" render={<Link href="/categories" />}>
+              Explore Categories
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        {/* Abstract Background Elements */}
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/4 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+      </section>
+
+      {/* Bestsellers Section */}
+      <section className="w-full py-16 md:py-24 bg-background">
+        <div className="container px-4 md:px-6">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">Bestsellers</h2>
+              <p className="text-muted-foreground">The books everyone is talking about right now.</p>
+            </div>
+            <Button variant="ghost" className="hidden sm:flex items-center gap-1 hover:text-primary" render={<Link href="/books" />}>
+              View all <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {bestsellers.length > 0 ? (
+              bestsellers.map((book) => (
+                <BookCard key={book.id} book={book as any} />
+              ))
+            ) : (
+              <p className="col-span-full text-muted-foreground text-center py-10 border rounded-lg border-dashed">
+                No bestsellers found.
+              </p>
+            )}
+          </div>
+          <Button variant="outline" className="w-full mt-6 sm:hidden" render={<Link href="/books" />}>
+            View all books
+          </Button>
         </div>
-      </main>
+      </section>
+
+      {/* Categories Section */}
+      <section className="w-full py-16 md:py-24 bg-muted/20 border-y">
+        <div className="container px-4 md:px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Shop by Category</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Find exactly what you're in the mood for by browsing our extensive genres.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.length > 0 ? (
+              categories.slice(0, 6).map((category) => (
+                <Link key={category.id} href={`/categories/${category.slug}`}>
+                  <Card className="h-full hover:border-primary/50 hover:shadow-md transition-all group cursor-pointer bg-background">
+                    <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full gap-3">
+                      <div className="p-3 rounded-full bg-primary/10 text-primary group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                        <BookOpen className="h-6 w-6" />
+                      </div>
+                      <h3 className="font-semibold">{category.name}</h3>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <p className="col-span-full text-muted-foreground text-center py-10">
+                No categories available.
+              </p>
+            )}
+          </div>
+          <div className="mt-10 text-center">
+            <Button variant="outline" render={<Link href="/categories" />}>
+              See All Categories
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* New Arrivals Section */}
+      <section className="w-full py-16 md:py-24 bg-background">
+        <div className="container px-4 md:px-6">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">New Arrivals</h2>
+              <p className="text-muted-foreground">Fresh off the press and ready to be read.</p>
+            </div>
+            <Button variant="ghost" className="hidden sm:flex items-center gap-1 hover:text-primary" render={<Link href="/books" />}>
+              View all <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {newArrivals.length > 0 ? (
+              newArrivals.map((book) => (
+                <BookCard key={book.id} book={book as any} />
+              ))
+            ) : (
+              <p className="col-span-full text-muted-foreground text-center py-10 border rounded-lg border-dashed">
+                No new arrivals found.
+              </p>
+            )}
+          </div>
+          <Button variant="outline" className="w-full mt-6 sm:hidden" render={<Link href="/books" />}>
+            View all books
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
