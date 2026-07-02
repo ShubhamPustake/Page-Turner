@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------
+// ENUMS
+// ----------------------------------------
+
+enum Role {
+  GUEST
+  CUSTOMER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  STRIPE
+  RAZORPAY
+  COD
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+// ----------------------------------------
+// USERS & AUTHENTICATION
+// ----------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String?
+  role          Role      @default(CUSTOMER)
+  emailVerified DateTime?
+  image         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  reviews       Review[]
+  sessions      Session[]
+  accounts      Account[]
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  cart          Cart?
+  wishlist      Wishlist?
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Address {
+  id                String      @id @default(cuid())
+  userId            String
+  label             AddressType @default(HOME)
+  street            String
+  city              String
+  state             String
+  zipCode           String
+  country           String
+  isDefaultShipping Boolean     @default(false)
+  isDefaultBilling  Boolean     @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------
+// CATALOG & INVENTORY
+// ----------------------------------------
+
+model Book {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String
+  isbn            String   @unique
+  publicationDate DateTime
+  language        String
+  pages           Int
+  edition         String?
+  format          String?
+  price           Float
+  discount        Float    @default(0)
+  rating          Float    @default(0)
+  coverImage      String?
+  images          String[]
+  isFeatured      Boolean  @default(false)
+  isBestSeller    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publisherId String
+  publisher   Publisher @relation(fields: [publisherId], references: [id])
+
+  authors       Author[]
+  categories    Category[]
+  reviews       Review[]
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  inventory     Inventory?
+}
+
+model Author {
+  id    String  @id @default(cuid())
+  name  String
+  slug  String  @unique
+  bio   String?
+  image String?
+
+  books Book[]
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  books Book[]
+}
+
+model Publisher {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  website     String?
+
+  books Book[]
+}
+
+model Inventory {
+  id                String  @id @default(cuid())
+  bookId            String  @unique
+  sku               String  @unique
+  barcode           String? @unique
+  warehouseLocation String?
+  quantity          Int     @default(0)
+  lowStockThreshold Int     @default(5)
+
+  updatedAt DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  rating     Int
+  comment    String?
+  isApproved Boolean  @default(false)
+  images     String[]
+  likesCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  bookId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------
+// SHOPPING (CART & WISHLIST)
+// ----------------------------------------
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id       String @id @default(cuid())
+  cartId   String
+  bookId   String
+  quantity Int    @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, bookId])
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
+}
+
+model WishlistItem {
+  id         String @id @default(cuid())
+  wishlistId String
+  bookId     String
+
+  createdAt DateTime @default(now())
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  book     Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, bookId])
+}
+
+// ----------------------------------------
+// ORDERS & PAYMENTS
+// ----------------------------------------
+
+model Order {
+  id             String          @id @default(cuid())
+  userId         String? // Optional for guest checkout
+  guestEmail     String? // If guest checkout
+  status         OrderStatus     @default(PENDING)
+  totalAmount    Float
+  taxAmount      Float           @default(0)
+  shippingAmount Float           @default(0)
+  paymentMethod  PaymentProvider
+  paymentStatus  PaymentStatus   @default(PENDING)
+  trackingNumber String?
+
+  // Snapshots of addresses
+  shippingAddress Json
+  billingAddress  Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items   OrderItem[]
+  payment Payment?
+}
+
+model OrderItem {
+  id              String @id @default(cuid())
+  orderId         String
+  bookId          String
+  quantity        Int
+  priceAtPurchase Float // To lock in the price at checkout
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book  Book  @relation(fields: [bookId], references: [id])
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  orderId       String          @unique
+  provider      PaymentProvider
+  transactionId String?         @unique
+  amount        Float
+  currency      String          @default("USD")
+  status        PaymentStatus   @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  discountType  DiscountType
+  discountValue Float
+  minPurchase   Float?
+  maxDiscount   Float?
+  validFrom     DateTime
+  validUntil    DateTime
+  usageLimit    Int?
+  usedCount     Int          @default(0)
+  isActive      Boolean      @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------
+// MARKETING & NOTIFICATIONS
+// ----------------------------------------
+
+model Newsletter {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  isActive     Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+}
+
+model Blog {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String?
+  coverImage  String?
+  authorId    String // Admin user
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id      String  @id @default(cuid())
+  userId  String
+  type    String
+  message String
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------
+// SYSTEM
+// ----------------------------------------
+
+model AuditLog {
+  id         String  @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+
+  createdAt DateTime @default(now())
+}
