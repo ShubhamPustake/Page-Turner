@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // Create Order in DB
+    // Create Order in DB (COD)
     const order = await db.order.create({
       data: {
         userId: userId || null,
@@ -102,10 +102,10 @@ export async function POST(req: Request) {
         shippingAmount: shippingAmount,
         taxAmount: taxAmount,
         status: "PENDING",
-        paymentMethod: "STRIPE",
+        paymentMethod: "COD", // Changed to COD
         paymentStatus: "PENDING",
         shippingAddress: shippingAddress,
-        billingAddress: shippingAddress, // simplified
+        billingAddress: shippingAddress, 
         items: {
           create: orderItems,
         },
@@ -116,30 +116,14 @@ export async function POST(req: Request) {
     await db.payment.create({
       data: {
         orderId: order.id,
-        provider: "STRIPE",
+        provider: "COD", // Changed to COD
         amount: order.totalAmount,
         status: "PENDING",
       },
     });
 
-    const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      line_items,
-      mode: "payment",
-      billing_address_collection: "required",
-      phone_number_collection: {
-        enabled: true,
-      },
-      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout/cancel`,
-      metadata: {
-        orderId: order.id,
-      },
-    });
-
-    return NextResponse.json({ url: session.url }, { headers: corsHeaders });
+    // Return the local success URL instead of a Stripe URL
+    return NextResponse.json({ url: `/checkout/success?orderId=${order.id}` }, { headers: corsHeaders });
   } catch (error) {
     console.error("[CHECKOUT_ERROR]", error);
     return new NextResponse("Internal Error", { status: 500 });

@@ -126,24 +126,12 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-secondary/20 p-4 rounded-md border border-secondary/30 mb-4 flex items-center justify-between">
-                <div className="font-medium text-sm">Demo Mode</div>
-                <div className="text-xs text-muted-foreground">No actual payment will be processed</div>
+                <div className="font-medium text-sm">Cash on Delivery (COD)</div>
+                <div className="text-xs text-muted-foreground">Pay when you receive the order</div>
               </div>
-              
-              <div className="space-y-2">
-                <Label>Card Number</Label>
-                <Input placeholder="0000 0000 0000 0000" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Expiry Date</Label>
-                  <Input placeholder="MM/YY" />
-                </div>
-                <div className="space-y-2">
-                  <Label>CVC</Label>
-                  <Input placeholder="123" />
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                You have selected Cash on Delivery. You will pay the delivery agent in cash when your books arrive at your doorstep. No credit card is required at this time.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -204,7 +192,7 @@ export default function CheckoutPage() {
                 disabled={isLoading}
               >
                 <Lock className="h-4 w-4 mr-2" />
-                {isLoading ? "Processing..." : "Place Order"}
+                {isLoading ? "Processing..." : "Place Order (COD)"}
               </Button>
             </CardFooter>
           </Card>
